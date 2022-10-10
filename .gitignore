@@ -1,1 +1,3 @@
-./data.tsv
+data.tsv
+*SearchKeywordPerformance/*
+*SearchKeywordPerformance.tab/*

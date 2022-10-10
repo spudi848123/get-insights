@@ -3,10 +3,12 @@ from pyspark import SparkContext, SparkConf
 from pyspark.sql import SparkSession, SQLContext, functions
 import os, csv, codecs, sys
 from awss import aws_clients
+from datetime import date
 from urllib.parse import urlparse, parse_qs
 from pyspark.sql.window import Window
-from pyspark.sql.functions import row_number
-
+from pyspark.sql.functions import row_number, col
+from pyspark.sql.types import StructType,StructField, StringType, IntegerType, DecimalType
+# from pyspark.sql.types import ArrayType, DoubleType, BooleanType
 
 # os.environ["JAVA_HOME"]=os.path.join("C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath")
 
@@ -30,9 +32,9 @@ spark._jsc.hadoopConfiguration().set("fs.s3a.aws.credentials.provider","org.apac
 spark._jsc.hadoopConfiguration().set("fs.s3a.endpoint", "s3.us-west-2.amazonaws.com")
 # spark._jsc.hadoopConfiguration().set("fs.s3a.path.style.access", "false") 
 
-# csvDf = spark.read.csv("s3a://get-insights-poc/data/data.tsv",sep=r'\t', header=True)
+csvDf = spark.read.csv("s3a://get-insights-poc/data/data.tsv",sep=r'\t', header=True)
 
-csvDf = spark.read.csv("data.tsv",sep=r'\t', header=True)
+# csvDf = spark.read.csv("data.tsv",sep=r'\t', header=True)
 print("got csvDF")
 
 def getAllpurchases(rawProductList):
@@ -56,7 +58,7 @@ def getSearchurls(csvDfRow):
     eventList = csvDfRow.event_list
     rawProductsList = csvDfRow.product_list
     productName = 'None'
-    revenue = 'None'
+    revenue = 0
     searchEng = 'None'
     searchkeyword = 'None'
     date_time = csvDfRow.date_time
@@ -90,8 +92,25 @@ searchEngDF = csvDf.rdd.map(lambda x: getSearchurls(x)).toDF(["datetime", "ip","
 
 windowSpec  = Window.partitionBy("ip").orderBy("datetime")
 
-print(searchEngDF.filter(~ ( ( searchEngDF.searchEngine == 'None' ) & ( searchEngDF.productName == 'None' ) ) ) \
-    .withColumn("row_number",row_number().over(windowSpec)).show(truncate=False))
+searchPurchaseDF = searchEngDF.filter(~ ( ( searchEngDF.searchEngine == 'None' ) & ( searchEngDF.productName == 'None' ) ) ) \
+    .withColumn("row_number",row_number().over(windowSpec))
+
+today = date.today().strftime("%Y-%m-%d")
+write_csv = today+"_SearchKeywordPerformance"
+
+(searchPurchaseDF.alias("search").join(searchPurchaseDF.alias("purchase"), \
+    col("search.ip") == col("purchase.ip"), "inner") \
+        .select(col("search.ip"),col("search.searchEngine"),col("search.keyWord"), \
+            col("purchase.productName"),col("purchase.revenue"), \
+            col("search.datetime").alias("search_datetime"), col("purchase.datetime").alias("purchase_datetime"))\
+        .where(col("search.row_number") == col("purchase.row_number")-1)) \
+        .groupBy("searchEngine","keyWord").sum("revenue").withColumnRenamed("sum(revenue)","TotalRevenue") \
+            .write.options(header='True', delimiter=r'\t').mode("overwrite").format("csv") \
+                .csv("./"+write_csv)
+# schema = StructType() \
+#       .add("SearchEngine",StringType(),False) \
+#       .add("Keyword",StringType(),False) \
+#       .add("Revenue",DecimalType(),False)
 
 # prodSalesDF = csvDf.filter("event_list = 1").rdd.map(lambda x: getAllpurchases(x)).toDF(["purchaseDatetime","ip","productName","revenue"])
 # print(prodSalesDF.show())
