@@ -1,0 +1,4 @@
+pyspark
+urllib
+python-dotenv
+python-lambda-local

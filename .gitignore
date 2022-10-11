@@ -1,3 +1,6 @@
 data.tsv
 *SearchKeywordPerformance/*
 *SearchKeywordPerformance.tab/*
+output/*
+event.json
+.env
