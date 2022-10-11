@@ -22,16 +22,19 @@ The problem can be best solved by using the following AWS Services
     2. Parse the query string to get the Search Engine, Key Word
     2. Get all records for the purchases made (event List = 1) 
 3) Write to a DataFrame. The headers in the DataFrame look as below
+
         > date_time          | ip         | searchEngine | searchkeyword | productName | revenue
         > 2009-09-27 6:37:58 | 23.8.61.21 | bing         | ipod          | None        | 0
         > 2009-09-27 6:42:55 | 23.8.61.21 | None         | None          | ipod_touch  | 100
 4) Revenue is calculated by (num items*list price)
 5) Apply row number over partition by IP address, order by date_time so that the search hits have a row number lower than its purchase hit
+
         > date_time          | ip         | searchEngine | searchkeyword | productName | revenue | row_number
         > 2009-09-27 6:37:58 | 23.8.61.21 | bing         | ipod          | None        | 0       | 1
         > 2009-09-27 6:42:55 | 23.8.61.21 | None         | None          | ipod_touch  | 100     | 2
 
 6) Apply Self join on the dataframe to assign the search hits to its corresponding purchase
+
         > date_time          | ip         | searchEngine | searchkeyword | productName | revenue 
         > 2009-09-27 6:37:58 | 23.8.61.21 | bing         | ipod          | ipod_touch  | 100
         
