@@ -40,7 +40,8 @@ The problem can be best solved by using the following AWS Services
         
 7) Group by the search Engine and Keyword to calculate the sum of revenue
 8) Apply **coalesce** on DataFrame function to consolidate all the data into one file
-9) Write the csv to the destination s3 bucket. 
+9) Write the csv to the destination s3 bucket.
+ 
     *I wasn't able to figure out a way to write the csv file directly with the naming convention. An alternative way is to access the output file again and rename it.*
 
 
