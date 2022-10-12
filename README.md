@@ -8,6 +8,7 @@ Given a data file with the website hit data, the pyspark job returns a tab delim
 ## Assumptions made: 
 1) Users are not directly searching on eshopzilla
 2) This is daily data
+3) All ips are valid
 
 ## AWS Stack for the problem
 The problem can be best solved by using the following AWS Services
