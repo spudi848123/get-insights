@@ -1,12 +1,14 @@
-import urllib
+import urllib, sys, os
+MODULES = os.path.join(os.getcwd(),"modules")
+sys.path.insert(0,MODULES)
 from spark_conf import sparkconf
 from get_insights import get_performance
 from get_env import get_env
 
 def lambda_handler(event, context):
     print("Get the bucket and the file name from the event")
-    bucket = event['Records'][0]['s3']['bucket']['name']
-    key = urllib.parse.unquote_plus(event['Records'][0]['s3']['object']['key'], encoding='utf-8')
+    # bucket = event['Records'][0]['s3']['bucket']['name']
+    # key = urllib.parse.unquote_plus(event['Records'][0]['s3']['object']['key'], encoding='utf-8')
 
     # Load environment variables
     print("Loading the environment variables")
@@ -19,7 +21,9 @@ def lambda_handler(event, context):
     print("Loading the spark context")
     sc = sparkconf()
     spark_context = sc.spark
-    get_performance(spark_context, s3_loc)
+    perf_obj = get_performance(spark_context,s3_loc)
+    # perf_obj = get_insights.get_keyPerf(spark_context, s3_loc)
+    # perf_obj.get_keyPerf(spark_context, s3_loc)
 
 if __name__ == '__main__':
     event = "event"

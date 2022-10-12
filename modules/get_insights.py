@@ -1,18 +1,19 @@
-from pyspark import SparkContext, SparkConf
-from pyspark.sql import SparkSession, SQLContext, functions
+# from pyspark import SparkContext, SparkConf
+# from pyspark.sql import SparkSession, SQLContext, functions
 import os, sys
 from datetime import date
 from urllib.parse import urlparse, parse_qs
 from pyspark.sql.window import Window
 from pyspark.sql.functions import row_number, col
-from get_env import get_env
+# from get_env import get_env
 
 # Set pyspark environment variables 
 print("Setting the pyspark environment variables")
 os.environ["PYSPARK_PYTHON"] = sys.executable
 os.environ['PYSPARK_DRIVER_PYTHON'] = sys.executable
 
-class get_performance(object):
+class get_performance:
+    
     """The method iterates through all the products and their attributes and collects the product_name and 
     its revenue in a products dictionary"""
     def getAllpurchases(self, rawProductList):
@@ -27,18 +28,18 @@ class get_performance(object):
             # Total Revenue is the number of items times the product price
             revenue = numItems*int(productAttr[3])
             products[productName] = revenue
-        return products
+        self.products = products
 
     """The below method processes the data and returns the following hits
         1) Search URL Hits
         2) Order purchase hit with the event list = 1"""    
     def getSearchurls(self, csvDfRow):
+        products = {"None": 0}
         ip = csvDfRow.ip
-        products = {}
         eventList = csvDfRow.event_list
         rawProductsList = csvDfRow.product_list
-        productName = 'None'
-        revenue = 0
+        # productName = 'None'
+        # revenue = 0
         searchEng = 'None'
         searchkeyword = 'None'
         date_time = csvDfRow.date_time
@@ -52,18 +53,20 @@ class get_performance(object):
                 searchkeyword = (parse_qs(parsed.query)['q'][0]).lower().replace(' ','_')
         # Getting all the purchase hits
         elif eventList == "1":
-            print(f"Getting products {rawProductsList}")
+            # print(f"Getting products {rawProductsList}")
             products = self.getAllpurchases(rawProductsList)
-            print(f"Products : {products}")
+            # print(f"Products : {products}")
         
-        if products:
+        if searchEng:
             for k, v in products.items():
-                print(f"Returning products list {k},{v}")
-                print(f"datetime {date_time}, IP {ip}, searchEng {searchEng}, searchkeyword {searchkeyword}, productName {k}, revenue {v}")
-                return(date_time, ip, searchEng, searchkeyword, k, v)
-        elif searchEng:
-            print(f"Returning searchEng {searchEng}")
-            return(date_time, ip, searchEng, searchkeyword, productName, revenue)
+                # print(f"Returning products list {k},{v}")
+                # print(f"datetime {date_time}, IP {ip}, searchEng {searchEng}, searchkeyword {searchkeyword}, productName {k}, revenue {v}")
+                self.date_time = date_time
+                self.ip = ip
+                self.searchEng = searchEng
+                self.searchkeyword = searchkeyword
+                self.productName = k
+                self.revenue = v
         else:
             pass
         print(f"Exiting out of getSearchurls")
@@ -88,7 +91,7 @@ class get_performance(object):
         # target file location on s3
         write_csv = "s3a://get-insights-poc/output/"+today+"_SearchKeywordPerformance"
 
-        # 1) Applying Self join on the dataframe to assign the search hits to its corresponding purchase
+        # 1) Applying Self join on the ip address on the dataframe to assign the search hits to its corresponding purchase
         # 2) Grouping by the search Engine and Keyword to calculate the revenue
         # 3) Using the coalesce DataFrame function to consolidate all the data into one file
         (searchPurchaseDF.alias("search").join(searchPurchaseDF.alias("purchase"), \
